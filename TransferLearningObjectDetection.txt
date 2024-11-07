@@ -1,0 +1,94 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras.optimizers import Adam
+from keras.losses import SparseCategoricalCrossentropy,CategoricalCrossentropy
+from keras.metrics import Accuracy
+from keras.applications.vgg16 import VGG16
+from keras.models import Sequential
+from keras.layers import MaxPooling2D, Flatten, Dense
+
+
+img_generator = ImageDataGenerator(brightness_range = (0.5, 1), 
+                                   channel_shift_range = 0.2,
+                                  horizontal_flip = True,
+                                  vertical_flip = True,
+                                  rescale = 1.0 / 255,
+                                  validation_split = 0.3)
+
+root_dir = "D:\Jupyter Notebook\TransferLearning\Object Detection(Ass6)\caltech-101-img"
+
+img_generator_flow_train = img_generator.flow_from_directory(
+    directory = root_dir,
+    target_size = (244, 244),
+    batch_size = 32,
+    shuffle = True,
+    subset = "training"
+)
+
+img_generator_flow_valid = img_generator.flow_from_directory(
+    directory = root_dir,
+    target_size = (244, 244),
+    batch_size = 32,
+    shuffle = True,
+    subset = "validation"
+)
+
+
+imgs, labels = next(iter(img_generator_flow_train))
+for img, label in zip(imgs, labels):
+    plt.imshow(img)
+    plt.show()
+
+model_path = "D:/DSBDA_Assignment/Deep Learning/LP-IV-datasets/Object Detection(Ass6)/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
+base_model = VGG16(input_shape=(224, 224, 3),
+                   include_top = False, 
+                   weights = model_path)
+
+
+base_model.trainable = False
+
+model = Sequential()
+model.add(base_model)
+model.add(MaxPooling2D())
+model.add(Flatten())
+model.add(Dense(102, activation = "softmax"))
+
+model.summary()
+
+
+adam  = Adam(0.001)
+model.compile(optimizer='adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+
+history = model.fit(img_generator_flow_train, 
+          validation_data = img_generator_flow_valid, 
+          steps_per_epoch=5,
+                    batch_size = 32,
+          epochs = 10)
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.xlabel('testing_accuracy')
+plt.ylabel('training_accuracy')
+plt.legend()
+plt.show()
+
+base_model.trainable = True
+
+model.compile(loss='categorical_crossentropy',metrics=['categorical_accuracy'],optimizer='adam')
+history = model.fit(img_generator_flow_train, 
+          validation_data = img_generator_flow_valid, 
+          steps_per_epoch=5,
+          batch_size = 32,
+          epochs = 10)
+
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.xlabel('testing_accuracy')
+plt.ylabel('training_accuracy')
+plt.legend()
+plt.show()
+

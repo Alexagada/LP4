@@ -1,0 +1,75 @@
+# a. Import the necessary packages
+
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import SGD
+
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.metrics import classification_report
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# b. Load training and testing data
+
+(X_train, Y_train), (x_test, y_test) = mnist.load_data()
+
+X_train.shape
+
+#Transform data
+X_train = X_train.reshape((X_train.shape[0], -1))
+X_train.shape
+x_test = x_test.reshape(x_test.shape[0], -1)
+X_train = X_train/255
+x_test = x_test/255
+
+lb = LabelBinarizer()
+
+Y_train = lb.fit_transform(Y_train);
+y_test = lb.transform(y_test)
+
+# c. Define the network architecture using Keras
+
+
+model = Sequential()
+#for the cifar10 dataset input shape will be 3074
+model.add(Dense(128, input_shape=(784,), activation="relu"))
+model.add(Dense(64, activation="relu"))
+model.add(Dense(10, activation="softmax"))
+
+# d. Train the model using SGD/Adam optimizer
+
+epoch = 11
+sgd = SGD(0.01)
+model.compile(loss = "categorical_crossentropy", optimizer = sgd, metrics = ["accuracy"] )
+
+H = model.fit(X_train, Y_train, validation_data = (x_test, y_test), epochs = epoch)
+model.summary()
+
+
+# e. Evaluate the network
+
+predictions = model.predict(x_test)
+print(classification_report(y_test.argmax(axis = 1), predictions.argmax(axis = 1)))
+test_loss, test_accu = model.evaluate(x_test, y_test)
+print(test_loss)
+print("test accuracy = ", test_accu)
+
+# f. Plot graphs
+
+
+
+plt.plot(H.history["accuracy"])
+plt.plot(H.history["val_accuracy"])
+plt.ylabel("accuracy")
+plt.xlabel("epochs")
+plt.legend(["Train", "Validation"])
+plt.show()
+
+plt.plot(H.history["loss"])
+plt.plot(H.history["val_loss"])
+plt.ylabel("loss")
+plt.xlabel("epochs")
+plt.legend(["Train", "Validation"])
+plt.show()
